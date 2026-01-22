@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a2a6c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Video Converter</title>
+    <link rel="icon" href="icons/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #1a1a2e;
+            color: #e6e6e6;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #16213e;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #0f3460 0%, #533483 100%);
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #4cc9f0;
+        }
+        
+        .main-content {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .file-section {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .file-input-area {
+            border: 2px dashed #4cc9f0;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        
+        .file-input-area:hover {
+            background-color: rgba(76, 201, 240, 0.05);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .file-info {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+        
+        .file-info.active {
+            display: block;
+        }
+        
+        button {
+            background: #4cc9f0;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin: 10px auto;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .progress-container.active {
+            display: block;
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .output-area {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .output-area.active {
+            display: block;
+        }
+        
+        .download-btn {
+            background: #00db9f;
+            margin-top: 15px;
+        }
+        
+        .log-output {
+            background: #000;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 15px;
+            font-size: 0.8rem;
+            display: none;
+        }
+        
+        .log-output.active {
+            display: block;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Video Converter</h1>
+            <p>Convert to MP4 using FFmpeg.wasm</p>
+        </header>
+        
+        <main class="main-content">
+            <section class="file-section">
+                <div class="file-input-area" id="dropArea">
+                    <p>📁 Click to select video file</p>
+                    <p><small>Supported formats: MP4, WebM, MOV, AVI, etc.</small></p>
+                    <input type="file" id="fileInput" accept="video/*">
+                </div>
+                
+                <div class="file-info" id="fileInfo">
+                    <p>File: <span id="fileName">-</span></p>
+                    <p>Size: <span id="fileSize">-</span></p>
+                </div>
+                
+                <button id="convertBtn" disabled>Convert to MP4</button>
+                
+                <div class="progress-container" id="progressContainer">
+                    <p class="progress-text" id="progressText">Processing...</p>
+                </div>
+                
+                <div class="log-output" id="logOutput"></div>
+                
+                <div class="output-area" id="outputArea">
+                    <p>Conversion complete!</p>
+                    <a id="downloadLink" download>
+                        <button class="download-btn">Download MP4</button>
+                    </a>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>Powered by FFmpeg.wasm - Runs entirely in your browser</p>
+        </footer>
+    </div>
+
+    <script src="ffmpeg.js"></script>
+    <script>
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const dropArea = document.getElementById('dropArea');
+        const fileInfo = document.getElementById('fileInfo');
+        const convertBtn = document.getElementById('convertBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressText = document.getElementById('progressText');
+        const outputArea = document.getElementById('outputArea');
+        const downloadLink = document.getElementById('downloadLink');
+        const logOutput = document.getElementById('logOutput');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+
+        let selectedFile = null;
+        let ffmpeg = null;
+
+        // Event listeners
+        dropArea.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        dropArea.addEventListener('dragover', (e) => e.preventDefault());
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        // Initialize FFmpeg
+        async function initFFmpeg() {
+            try {
+                addLog('Loading FFmpeg...');
+                ffmpeg = await createFFmpeg({
+                    log: true,
+                    progress: ({ ratio }) => {
+                        const percent = Math.round(ratio * 100);
+                        progressText.textContent = `Processing: ${percent}%`;
+                    }
+                });
+                addLog('FFmpeg ready!');
+            } catch (error) {
+                addLog('Error loading FFmpeg: ' + error.message, 'error');
+            }
+        }
+
+        // Handle file selection
+        function handleFile(file) {
+            if (!file.type.startsWith('video/')) {
+                alert('Please select a video file.');
+                return;
+            }
+            
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.add('active');
+            convertBtn.disabled = false;
+            
+            // Initialize FFmpeg on first file selection
+            if (!ffmpeg) {
+                initFFmpeg();
+            }
+        }
+
+        // Convert button
+        convertBtn.addEventListener('click', convertVideo);
+
+        // Main conversion function
+        async function convertVideo() {
+            if (!selectedFile || !ffmpeg) {
+                alert('Please select a file first.');
+                return;
+            }
+            
+            convertBtn.disabled = true;
+            progressContainer.classList.add('active');
+            logOutput.classList.add('active');
+            addLog('Starting conversion...');
+
+            try {
+                const inputFilename = selectedFile.name;
+                const outputFilename = inputFilename + '.mp4';
+
+                // Read and write input file
+                addLog('Reading file...');
+                const fileData = await readFileAsUint8Array(selectedFile);
+                ffmpeg.FS.writeFile(inputFilename, fileData);
+                addLog('File loaded');
+
+                // Simple FFmpeg command - just convert to MP4
+                const args = ['-i', inputFilename, outputFilename, '-y', '-nostdin', '-loglevel', 'info'];
+                addLog('Running: ffmpeg ' + args.join(' '));
+
+                // Capture console output
+                const logs = [];
+                const originalLog = console.log;
+                console.log = (...args) => logs.push(args.join(' '));
+                
+                await ffmpeg.callMain(args);
+                
+                // Restore console and show logs
+                console.log = originalLog;
+                logs.forEach(log => addLog(log));
+
+                // Read output file
+                const outputData = ffmpeg.FS.readFile(outputFilename);
+                addLog('Conversion complete!');
+
+                // Create download link
+                const blob = new Blob([outputData.buffer], { type: 'video/mp4' });
+                const url = URL.createObjectURL(blob);
+                downloadLink.href = url;
+                downloadLink.download = outputFilename;
+
+                // Show result
+                outputArea.classList.add('active');
+                progressText.textContent = 'Complete!';
+
+                // Cleanup
+                ffmpeg.FS.unlink(inputFilename);
+                ffmpeg.FS.unlink(outputFilename);
+
+            } catch (error) {
+                addLog('Conversion failed: ' + error.message, 'error');
+                alert('Conversion failed. Please try another file.');
+            } finally {
+                convertBtn.disabled = false;
+            }
+        }
+
+        // Helper functions
+        function readFileAsUint8Array(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(new Uint8Array(reader.result));
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function addLog(message, type = 'info') {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = message;
+            if (type === 'error') logEntry.style.color = '#ff4444';
+            logOutput.appendChild(logEntry);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        // Initialize
+        addLog('Ready - select a video file to convert to MP4');
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log('Service Worker successfully registered.'))
+            .catch(err => console.error('Erro SW:', err));
+        }
+    </script>
+</body>
+</html>
