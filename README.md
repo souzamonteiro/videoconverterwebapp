@@ -163,3 +163,14 @@ This project is open source. Feel free to use and modify as needed.
 - [FFmpeg](https://ffmpeg.org/) for the powerful multimedia framework
 - [FFmpeg.wasm](https://github.com/souzamonteiro/ffmpeg-wasm-browser.git) for the WebAssembly port
 - All contributors and testers
+
+## Maia Reel visual theme
+
+The interface uses the shared Maia Reel dark theme in `www/maia-reel.css`,
+loaded after the app's layout styles. It is a local static asset: no CDN, build
+step or new server is needed. Media processing and user-selected video title
+styles remain under the original application code's control.
+
+The canonical stylesheet and deployment instructions are maintained in the
+sibling `maia-edge-apps-deployment` repository, in `themes/maia-reel.css` and
+`docs/MEDIA-THEME.md`. The PWA cache has a new version and is scoped to this app.
